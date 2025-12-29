@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MD OFFICE PRO | ENTERPRISE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #4f46e5; --slate: #0f172a; --dev: #7c3aed; --success: #10b981; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 15px; background: white; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; white-space: nowrap; font-size: 12px; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
+        .price-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; background: white; transition: 0.3s; }
+        .price-card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .price-card h4 { margin: 0; font-size: 14px; color: #64748b; }
+        .price-card h2 { margin: 10px 0; font-size: 20px; color: var(--slate); }
+        .modal { display: none; position: fixed; z-index: 1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+        .modal-content { background:white; margin:5% auto; padding:30px; border-radius:15px; max-width:500px; max-height:80vh; overflow-y:auto; position:relative; }
+        .close-modal { position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="trialBar" style="background:#fef3c7; color:#92400e; padding:10px; text-align:center; font-weight:bold; font-size:12px;" class="hidden"></div>
+
+    <div id="authBox" style="max-width: 400px; margin: 60px auto;">
+        <div class="card" id="loginUI">
+            <h2 align="center">Portal Access</h2>
+            <input type="email" id="logEmail" placeholder="Email Address">
+            <input type="password" id="logPass" placeholder="Password">
+            <button onclick="auth('login')" id="loginBtn">Sign In</button>
+            <p align="center" onclick="toggleAuth(true)" style="color:blue; cursor:pointer; font-size:13px;">Register MD Office</p>
+            <p align="center" style="font-size:11px; margin-top:20px;">
+                <a href="javascript:openModal('termsModal')">Terms</a> | <a href="javascript:openModal('privacyModal')">Privacy</a> | <a href="javascript:openModal('guideModal')">Guide</a>
+            </p>
+        </div>
+        <div class="card hidden" id="signupUI">
+            <h2 align="center">MD Signup</h2>
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="password" id="regPass" placeholder="Password">
+            <button onclick="mdSignup()" style="background:var(--success)">Start 24h Trial</button>
+            <p align="center" onclick="toggleAuth(false)" style="color:blue; cursor:pointer; font-size:13px;">Back to Login</p>
+        </div>
+    </div>
+
+    <div id="appBox" class="hidden">
+        <div style="background:var(--slate); color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+            <b>MD OFFICE PRO</b><button onclick="location.reload()" style="width:auto; background:var(--danger); font-size:10px; padding:5px 12px;">Logout</button>
+        </div>
+
+        <div class="container" style="max-width:900px; margin:20px auto; padding:0 15px;">
+            
+            <div id="devTab" class="hidden">
+                <div class="card" style="border-top:5px solid var(--dev);">
+                    <h3 style="color:var(--dev);">Developer Dashboard</h3>
+                    <button onclick="runTriggerInstall()" style="background:var(--slate); margin-bottom:15px;">Install Auto-Cleanup Trigger</button>
+                    <div class="card">
+                        <h4>Key Generator</h4>
+                        <input type="number" id="keyDays" placeholder="Days (e.g. 7, 30, 365)">
+                        <button onclick="genKey()" style="background:var(--dev)">Generate License Key</button>
+                        <div id="keyDisplay" style="text-align:center; font-size:22px; font-weight:bold; color:var(--dev); margin-top:10px;"></div>
+                    </div>
+                    <div class="card"><h4>Registered MDs</h4><div style="overflow-x:auto;"><table><thead><tr><th>Email</th><th>Action</th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
+                </div>
+            </div>
+
+            <div id="mdNav" class="nav-tabs hidden">
+                <div class="tab-btn active" onclick="switchTab('pipeTab', this)">Pipeline</div>
+                <div class="tab-btn" onclick="switchTab('staffTab', this)">Staff</div>
+                <div class="tab-btn" onclick="switchTab('brandTab', this)">Branding</div>
+                <div class="tab-btn" onclick="switchTab('licTab', this)">License</div>
+            </div>
+
+            <div id="licTab" class="card hidden">
+                <h3 align="center">Subscription Plans</h3>
+                <div class="pricing-grid">
+                    <div class="price-card"><h4>Weekly</h4><h2>₦5,000</h2><button onclick="buyPlan('Weekly (7 Days)')">Select</button></div>
+                    <div class="price-card" style="border-color:var(--primary);"><h4>Monthly</h4><h2>₦15,000</h2><button onclick="buyPlan('Monthly (30 Days)')">Select</button></div>
+                    <div class="price-card"><h4>3 Months</h4><h2>₦40,000</h2><button onclick="buyPlan('Standard (90 Days)')">Select</button></div>
+                    <div class="price-card"><h4>6 Months</h4><h2>₦75,000</h2><button onclick="buyPlan('Business (180 Days)')">Select</button></div>
+                    <div class="price-card"><h4>Yearly</h4><h2>₦120,000</h2><button onclick="buyPlan('Annual (365 Days)')">Select</button></div>
+                </div>
+                <div class="card" style="background:#f8fafc;">
+                    <h4>Redeem Activation Key</h4>
+                    <input type="text" id="licenseKey" placeholder="PRO-XXXX-XXXX">
+                    <button onclick="activateLicense()" style="background:var(--success)">Activate Now</button>
+                </div>
+            </div>
+
+            <div id="pipeTab" class="card hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><h3>Pipeline</h3><button onclick="exportToExcel()" style="width:auto; padding:5px 12px; font-size:11px; background:var(--slate);">Export CSV</button></div>
+                <div id="pipeBody">Loading...</div>
+            </div>
+
+            <div id="staffTab" class="card hidden"><h3>Staff</h3><input type="email" id="stEmail" placeholder="Email"><input type="password" id="stPass" placeholder="Pass"><button onclick="createStaff()">Create Staff</button></div>
+            
+            <div id="brandTab" class="card hidden"><h3>Branding</h3><label>Logo</label><input type="file" id="logoFile"><label>MD Signature</label><input type="file" id="signFile"><button onclick="uploadBranding()">Save Branding</button></div>
+
+            <div id="entryTab" class="card hidden">
+                <h3>New Applicant Entry</h3>
+                <input type="text" id="apName" placeholder="Full Name"><input type="tel" id="apPhone" placeholder="Phone"><input type="email" id="apEmail" placeholder="Email"><input type="text" id="apCourse" placeholder="Course">
+                <select id="apQual">
+                    <option value="SSCE">SSCE</option><option value="OND">OND</option><option value="HND">HND</option>
+                    <option value="NCE">NCE</option><option value="B.Sc">B.Sc</option><option value="B.A">B.A</option>
+                    <option value="B.Ed">B.Ed</option><option value="B.Eng">B.Eng</option><option value="B.Tech">B.Tech</option>
+                    <option value="B.Pharm">B.Pharm</option><option value="LL.B">LL.B</option><option value="BL">BL</option>
+                    <option value="MBBS">MBBS</option><option value="DVM">DVM</option><option value="PGD">PGD</option>
+                    <option value="M.Sc">M.Sc</option><option value="M.A">M.A</option><option value="MBA">MBA</option>
+                    <option value="M.Ed">M.Ed</option><option value="M.Phil">M.Phil</option><option value="Ph.D">Ph.D</option>
+                </select>
+                <select id="apGrade"><option>First Class</option><option>Second Upper</option><option>Second Lower</option><option>Pass</option></select>
+                <button onclick="submitApp()" style="background:var(--success)">Submit to MD</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="termsModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('termsModal')">&times;</span><h2>Terms</h2><p>1. 24h Trial. 2. 31-day auto-delete for expired trials. 3. No refunds on activated keys.</p></div></div>
+    <div id="privacyModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('privacyModal')">&times;</span><h2>Privacy</h2><p>Data is stored securely on private Google Cloud servers. We do not sell applicant leads.</p></div></div>
+    <div id="guideModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('guideModal')">&times;</span><h2>User Guide</h2><p>MD: Upload branding, then create staff. Staff: Enter data. MD: Click Approve in Pipeline to send PDF letters.</p></div></div>
+
+    <script>
+        const API = "https://script.google.com/macros/s/AKfycbzjzqjcxrR5TdrcW8YX9_WcUKvCECohDgZjIWh8vayDWH7QHUNppZr4usDzfxLn5lcllw/exec"; 
+        let user = {};
+
+        function openModal(id) { document.getElementById(id).style.display = "block"; }
+        function closeModal(id) { document.getElementById(id).style.display = "none"; }
+        function toggleAuth(s) { document.getElementById('loginUI').classList.toggle('hidden', s); document.getElementById('signupUI').classList.toggle('hidden', !s); }
+
+        async function auth(action) {
+            const res = await fetch(API, {method:'POST', body:JSON.stringify({action, email:document.getElementById('logEmail').value, password:document.getElementById('logPass').value})});
+            const data = await res.json();
+            if(data.success) {
+                user = data; document.getElementById('authBox').classList.add('hidden'); document.getElementById('appBox').classList.remove('hidden');
+                if(user.role === 'DEV') { document.getElementById('devTab').classList.remove('hidden'); refreshAdmin(); }
+                else if(user.isExpired) { show('licTab'); }
+                else if(user.role === 'MD') { document.getElementById('mdNav').classList.remove('hidden'); show('pipeTab'); loadPipeline(); }
+                else show('entryTab');
+                if(user.hoursLeft > 0) { document.getElementById('trialBar').classList.remove('hidden'); document.getElementById('trialBar').innerText = `TRIAL EXPIRES IN ${user.hoursLeft} HOURS`; }
+            } else alert("Denied");
+        }
+
+        async function buyPlan(p) {
+            fetch(API, {method:'POST', body:JSON.stringify({action:'log_interest', email:user.email, plan:p})});
+            window.open(`https://wa.me/2347030151024?text=I want to subscribe to the ${p} plan for ${user.email}`, '_blank');
+        }
+
+        async function activateLicense() { const res = await fetch(API, {method:'POST', body:JSON.stringify({action:'redeem_key', email:user.email, key:document.getElementById('licenseKey').value})}); alert(await res.text()); location.reload(); }
+        async function loadPipeline() { const res = await fetch(API); const d = await res.json(); const mine = d.filter(r => r[8] === user.email); document.getElementById('pipeBody').innerHTML = mine.map(r => `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><b>${r[0]}</b><br><small>${r[3]} | ${r[9]}</small></div><div>${r[5]==='Pending'? `<button onclick="approve('${r[0]}','${r[2]}','${r[3]}','${r[9]}','${r[4]}')" style="background:var(--success); font-size:10px; width:auto;">Approve</button>` : '<b>'+r[5]+'</b>'}</div></div>`).join(''); }
+        async function approve(n,e,q,c,g) { await fetch(API, {method:'POST', body:JSON.stringify({action:'approve_applicant', appName:n, appEmail:e, appQual:q, appCourse:c, appGrade:g, mdEmail:user.email})}); alert("Letter Sent!"); loadPipeline(); }
+        async function mdSignup() { await fetch(API, {method:'POST', body:JSON.stringify({action:'md_signup', email:document.getElementById('regEmail').value, password:document.getElementById('regPass').value})}); alert("Success! Log in now."); toggleAuth(false); }
+        async function genKey() { const res = await fetch(API, {method:'POST', body:JSON.stringify({action:'generate_key', email:user.email, days:document.getElementById('keyDays').value})}); document.getElementById('keyDisplay').innerText = await res.text(); }
+        async function runTriggerInstall() { const res = await fetch(API, {method:'POST', body:JSON.stringify({action:'install_trigger', email:user.email})}); alert(await res.text()); }
+        async function submitApp() { await fetch(API, {method:'POST', body:JSON.stringify({action:'submit_applicant', name:document.getElementById('apName').value, phone:document.getElementById('apPhone').value, email:document.getElementById('apEmail').value, course:document.getElementById('apCourse').value, qual:document.getElementById('apQual').value, grade:document.getElementById('apGrade').value, submittedBy:user.email, mdEmail:user.mdEmail})}); alert("Submitted!"); }
+        async function uploadBranding() { const toB64 = f => new Promise(r => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result); }); const logo = document.getElementById('logoFile').files[0] ? await toB64(document.getElementById('logoFile').files[0]) : null; const sign = document.getElementById('signFile').files[0] ? await toB64(document.getElementById('signFile').files[0]) : null; await fetch(API, {method:'POST', body:JSON.stringify({action:'update_branding', email:user.email, logo, sign})}); alert("Branding Updated!"); }
+        function show(id) { ['pipeTab','staffTab','brandTab','licTab','entryTab','devTab'].forEach(t => document.getElementById(t).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+        function switchTab(id, el) { show(id); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+        function exportToExcel() { fetch(API).then(r => r.json()).then(data => { const mine = data.filter(r => r[8] === user.email); let csv = "Name,Phone,Email,Qual,Grade,Status,Date,Course\n"; mine.forEach(r => csv += `"${r[0]}","${r[1]}","${r[2]}","${r[3]}","${r[4]}","${r[5]}","${r[6]}","${r[9]}"\n`); const link = document.createElement("a"); link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv); link.download = 'Report.csv'; link.click(); }); }
+    </script>
+</body>
+</html>
